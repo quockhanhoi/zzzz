@@ -15,7 +15,7 @@ let page;
 let waitingCaptcha = false;
 
 // ================= READY =================
-client.on("ready", () => {
+client.once("clientReady", () => {
   console.log(`✅ Bot đã login: ${client.user.tag}`);
 });
 
@@ -43,7 +43,7 @@ client.on("messageCreate", async (msg) => {
 
       await msg.channel.send("🔐 Đang chờ captcha...");
 
-      await page.waitForTimeout(3000);
+      await new Promise(r => setTimeout(r, 3000));
 
       await sendCaptcha(msg);
     }

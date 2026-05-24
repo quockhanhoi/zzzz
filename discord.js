@@ -57,4 +57,4 @@ async function sendCaptcha(msg) {
   });
 }
 
-client.login("YOUR_TOKEN");
+client.login("MTMyNTMzNTg4ODQ2NDcxMTY5MA.GW3tcW.4TmlKfA7lUopozRGfeQ2bAslrCFuSzxq8m71Kw");

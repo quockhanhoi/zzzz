@@ -1,5 +1,6 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 const puppeteer = require("puppeteer");
+const readline = require("readline");
 
 const client = new Client({
   intents: [
@@ -24,13 +25,11 @@ client.on("messageCreate", async (msg) => {
 
     msg.channel.send("🚀 Đã mở Zefoy. Đang chờ captcha...");
 
-    // giả lập phát hiện captcha
-    await page.waitForTimeout(3000);
+    await new Promise(r => setTimeout(r, 3000));
 
     await sendCaptcha(msg);
   }
 
-  // user nhập captcha
   if (waitingCaptcha && msg.author.bot === false) {
     const code = msg.content.trim();
 
@@ -38,7 +37,6 @@ client.on("messageCreate", async (msg) => {
 
     await msg.reply(`⌛ Đang nhập mã: ${code}`);
 
-    // ví dụ nhập captcha vào input
     await page.type("input", code);
     await page.keyboard.press("Enter");
 
@@ -57,4 +55,9 @@ async function sendCaptcha(msg) {
   });
 }
 
-client.login("MTMyNTMzNTg4ODQ2NDcxMTY5MA.GW3tcW.4TmlKfA7lUopozRGfeQ2bAslrCFuSzxq8m71Kw");
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+rl.question("Nhập token: ", (token) => {
+  rl.close();
+  client.login(token);
+});

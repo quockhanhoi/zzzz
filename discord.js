@@ -10,54 +10,92 @@ const client = new Client({
   ],
 });
 
+let browser;
 let page;
 let waitingCaptcha = false;
 
+// ================= READY =================
+client.on("ready", () => {
+  console.log(`✅ Bot đã login: ${client.user.tag}`);
+});
+
+// ================= MESSAGE =================
 client.on("messageCreate", async (msg) => {
-  if (msg.content === "!start") {
-    const browser = await puppeteer.launch({
-      headless: false,
-      defaultViewport: null,
-    });
+  try {
+    if (msg.author.bot) return;
 
-    page = await browser.newPage();
-    await page.goto("https://zefoy.com");
+    const content = msg.content?.trim().toLowerCase();
 
-    msg.channel.send("🚀 Đã mở Zefoy. Đang chờ captcha...");
+    // START COMMAND
+    if (content === "!start") {
+      await msg.channel.send("🚀 Đang mở trình duyệt...");
 
-    await new Promise(r => setTimeout(r, 3000));
+      browser = await puppeteer.launch({
+        headless: false,
+        defaultViewport: null,
+      });
 
-    await sendCaptcha(msg);
-  }
+      page = await browser.newPage();
 
-  if (waitingCaptcha && msg.author.bot === false) {
-    const code = msg.content.trim();
+      await page.goto("https://zefoy.com", {
+        waitUntil: "networkidle2",
+      });
 
-    waitingCaptcha = false;
+      await msg.channel.send("🔐 Đang chờ captcha...");
 
-    await msg.reply(`⌛ Đang nhập mã: ${code}`);
+      await page.waitForTimeout(3000);
 
-    await page.type("input", code);
-    await page.keyboard.press("Enter");
+      await sendCaptcha(msg);
+    }
 
-    msg.channel.send("✅ Đã gửi captcha, tiếp tục chạy...");
+    // CAPTCHA INPUT
+    if (waitingCaptcha && msg.content && !msg.author.bot) {
+      const code = msg.content.trim();
+
+      waitingCaptcha = false;
+
+      await msg.reply(`⌛ Đang nhập: **${code}**`);
+
+      if (!page) {
+        return msg.channel.send("❌ Page chưa mở!");
+      }
+
+      await page.type("input", code, { delay: 100 });
+      await page.keyboard.press("Enter");
+
+      await msg.channel.send("✅ Đã gửi captcha!");
+    }
+  } catch (err) {
+    console.log("❌ ERROR:", err);
+    msg.channel.send("❌ Bot bị lỗi, xem console!");
   }
 });
 
+// ================= CAPTCHA =================
 async function sendCaptcha(msg) {
-  waitingCaptcha = true;
+  try {
+    waitingCaptcha = true;
 
-  await page.screenshot({ path: "captcha.png" });
+    await page.screenshot({ path: "captcha.png" });
 
-  msg.channel.send({
-    content: "🔐 Nhập mã captcha bằng cách gõ trực tiếp vào chat:",
-    files: ["captcha.png"],
-  });
+    await msg.channel.send({
+      content: "🔐 Nhập captcha bằng cách gõ vào chat:",
+      files: ["captcha.png"],
+    });
+  } catch (err) {
+    console.log("Captcha error:", err);
+  }
 }
 
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+// ================= LOGIN =================
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
 rl.question("Nhập token: ", (token) => {
   rl.close();
-  client.login(token);
+  client.login(token)
+    .then(() => console.log("🔑 Logging in..."))
+    .catch((err) => console.log("❌ Token lỗi:", err));
 });
